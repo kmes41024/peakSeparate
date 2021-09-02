@@ -46,6 +46,9 @@ class peakSeparate:
             self.sub_peakX = np.array(self.sub_peakX)
             self.sub_peakY = np.array(self.sub_peakY)
 
+            if (self.sub_peakY.max() > 1000):
+                self.check()
+
             if self.sub_peakY.max() >= 200 or i == 0:
                 self.doneFit = False
 
@@ -245,6 +248,54 @@ class peakSeparate:
             for index in range(self.splitPos[i][0], (self.splitPos[i][1] + 1)):  # 每個重疊峰區段
                 self.drawY[index] = self.fitCurveY[i][count]
                 count += 1
+
+    #判斷波段是否振盪過小
+    def check(self):
+        top_idx = self.sub_peakY.tolist().index(self.sub_peakY.max())
+
+        top_left_bottom_idx = top_idx - 1
+        while top_left_bottom_idx > 0:
+            if (self.sub_peakY[top_left_bottom_idx] < 1000) and (self.sub_peakY[top_left_bottom_idx - 1] >= self.sub_peakY[top_left_bottom_idx] and self.sub_peakY[top_left_bottom_idx] <= self.sub_peakY[top_left_bottom_idx + 1]):
+                break
+            top_left_bottom_idx -= 1
+
+        #left
+        topY_left_idx = self.sub_peakY.tolist().index(self.sub_peakY[:top_left_bottom_idx+1].max())
+
+        if self.sub_peakY[topY_left_idx] > 800:
+            bottom_left_idx = topY_left_idx
+            while bottom_left_idx < top_left_bottom_idx:
+                if (self.sub_peakY[bottom_left_idx] < 1000) and (self.sub_peakY[bottom_left_idx - 1] >= self.sub_peakY[bottom_left_idx] and self.sub_peakY[bottom_left_idx] <= self.sub_peakY[bottom_left_idx + 1]):
+                    break
+                bottom_left_idx += 1
+
+
+            if top_left_bottom_idx - bottom_left_idx >= 50:
+                maxV = self.sub_peakY[bottom_left_idx : top_left_bottom_idx+1].max()
+                minV = self.sub_peakY[bottom_left_idx: top_left_bottom_idx + 1].min()
+                if (maxV-minV) < 800:
+                    self.sub_peakY[bottom_left_idx:top_left_bottom_idx+1] = [0] * (top_left_bottom_idx - bottom_left_idx + 1)
+
+        #right
+        top_right_bottom_idx = top_idx
+        while top_right_bottom_idx < len(self.sub_peakY) - 1:
+            if (self.sub_peakY[top_right_bottom_idx] < 1000) and (self.sub_peakY[top_right_bottom_idx - 1] >= self.sub_peakY[top_right_bottom_idx] and self.sub_peakY[top_right_bottom_idx] <= self.sub_peakY[top_right_bottom_idx + 1]):
+                break
+            top_right_bottom_idx += 1
+
+        topY_right_idx = self.sub_peakY.tolist().index(self.sub_peakY[top_right_bottom_idx:].max())
+        if self.sub_peakY[topY_right_idx] > 800:
+            bottom_right_idx = topY_right_idx
+            while bottom_right_idx >= top_right_bottom_idx:
+                if (self.sub_peakY[bottom_right_idx] < 1000) and (self.sub_peakY[bottom_right_idx - 1] >= self.sub_peakY[bottom_right_idx] and self.sub_peakY[bottom_right_idx] <= self.sub_peakY[bottom_right_idx + 1]):
+                    break
+                bottom_right_idx -= 1
+
+            if bottom_right_idx - top_right_bottom_idx >= 50:
+                max = self.sub_peakY[top_right_bottom_idx: bottom_right_idx + 1].max()
+                min = self.sub_peakY[top_right_bottom_idx: bottom_right_idx + 1].min()
+                if max - min > 800:
+                    self.sub_peakY[top_right_bottom_idx:bottom_right_idx + 1] = [0] * (bottom_right_idx - top_right_bottom_idx + 1)
 
     #儲存fit後的Curve
     def saveFitCurve(self, path, fileName): 
